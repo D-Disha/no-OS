@@ -3,7 +3,7 @@
  *   @brief  Header file of AD5592R Base Driver.
  *   @author Mircea Caprioru (mircea.caprioru@analog.com)
 ********************************************************************************
- * Copyright 2018, 2020(c) Analog Devices, Inc.
+ * Copyright 2018, 2020, 2025(c) Analog Devices, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -19,7 +19,7 @@
  *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. ‚ÄúAS IS‚Äù AND ANY EXPRESS OR
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. ìAS ISî AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
@@ -92,6 +92,8 @@ enum ad5592r_registers {
 
 #define INTERNAL_VREF_VOLTAGE			    2.5
 
+#define NUM_OF_CHANNELS 8
+
 struct ad5592r_dev;
 
 struct ad5592r_rw_ops {
@@ -108,8 +110,22 @@ struct ad5592r_rw_ops {
 	int32_t (*gpio_read)(struct ad5592r_dev *dev, uint8_t *value);
 };
 
+enum ad559xr_range {
+	ZERO_TO_VREF,
+	ZERO_TO_2VREF
+};
+
 struct ad5592r_init_param {
 	bool int_ref;
+	struct no_os_spi_init_param *spi_init;
+	struct no_os_i2c_init_param *i2c_init;
+	uint8_t channel_modes[8];
+	uint8_t channel_offstate[8];
+	enum ad559xr_range adc_range;
+	enum ad559xr_range dac_range;
+	bool adc_buf;
+	uint16_t cached_dac[8];
+	uint8_t power_down[8];
 };
 
 struct ad5592r_dev {
@@ -126,6 +142,11 @@ struct ad5592r_dev {
 	uint8_t gpio_in;
 	uint8_t gpio_val;
 	uint8_t ldac_mode;
+	enum ad559xr_range adc_range;
+	enum ad559xr_range dac_range;
+	bool int_ref;
+	uint8_t power_down[8];
+	bool adc_buf;
 };
 
 int32_t ad5592r_base_reg_write(struct ad5592r_dev *dev, uint8_t reg,
@@ -141,5 +162,12 @@ int32_t ad5592r_gpio_direction_output(struct ad5592r_dev *dev,
 int32_t ad5592r_software_reset(struct ad5592r_dev *dev);
 int32_t ad5592r_set_channel_modes(struct ad5592r_dev *dev);
 int32_t ad5592r_reset_channel_modes(struct ad5592r_dev *dev);
+int32_t ad5592r_set_adc_range(struct ad5592r_dev *dev,
+			      enum ad559xr_range adc_range);
+int32_t ad5592r_set_dac_range(struct ad5592r_dev *dev,
+			      enum ad559xr_range dac_range);
+int32_t ad5592r_power_down(struct ad5592r_dev *dev, uint8_t chan, bool status);
+int32_t ad5592r_set_int_ref(struct ad5592r_dev *dev, bool status);
+int32_t ad5592r_set_adc_buffer(struct ad5592r_dev *dev, bool status);
 
 #endif /* AD5592R_BASE_H_ */

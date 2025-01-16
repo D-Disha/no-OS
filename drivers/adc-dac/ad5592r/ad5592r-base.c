@@ -3,7 +3,7 @@
  *   @brief  Implementation of AD5592R Base Driver.
  *   @author Mircea Caprioru (mircea.caprioru@analog.com)
 ********************************************************************************
- * Copyright 2018, 2020(c) Analog Devices, Inc.
+ * Copyright 2018, 2020, 2025(c) Analog Devices, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -19,7 +19,7 @@
  *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. â€œAS ISâ€ AND ANY EXPRESS OR
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
@@ -319,4 +319,166 @@ int32_t ad5592r_reset_channel_modes(struct ad5592r_dev *dev)
 		dev->channel_modes[i] = CH_MODE_UNUSED;
 
 	return ad5592r_set_channel_modes(dev);
+}
+
+/**
+ * Set ADC Range of the device
+ *
+ * @param dev - The device structure.
+ * @param adc_range - ADC Range
+ * @return 0 in case of success, negative error code otherwise
+ */
+int32_t ad5592r_set_adc_range(struct ad5592r_dev *dev,
+			      enum ad559xr_range adc_range)
+{
+	int32_t ret;
+	uint16_t temp_reg_val;
+
+	if (!dev)
+		return -1;
+
+	ret = ad5592r_base_reg_read(dev, AD5592R_REG_CTRL, &temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	if (adc_range)
+		temp_reg_val |= AD5592R_REG_CTRL_ADC_RANGE;
+	else
+		temp_reg_val &= ~AD5592R_REG_CTRL_ADC_RANGE;
+
+	ret = ad5592r_base_reg_write(dev, AD5592R_REG_CTRL, temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	dev->adc_range = adc_range;
+
+	return 0;
+}
+
+/**
+ * Set DAC Range of the device
+ *
+ * @param dev - The device structure.
+ * @param dac_range - DAC Range
+ * @return 0 in case of success, negative error code otherwise
+ */
+int32_t ad5592r_set_dac_range(struct ad5592r_dev *dev,
+			      enum ad559xr_range dac_range)
+{
+	int32_t ret;
+	uint16_t temp_reg_val;
+
+	if (!dev)
+		return -1;
+
+	ret = ad5592r_base_reg_read(dev, AD5592R_REG_CTRL, &temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	if (dac_range)
+		temp_reg_val |= AD5592R_REG_CTRL_DAC_RANGE;
+	else
+		temp_reg_val &= ~AD5592R_REG_CTRL_DAC_RANGE;
+
+	ret = ad5592r_base_reg_write(dev, AD5592R_REG_CTRL, temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	dev->dac_range = dac_range;
+
+	return 0;
+}
+
+/**
+ * Set Power Down DAC Channel of the device
+ *
+ * @param dev - The device structure.
+ * @param chan - The channel number.
+ * @param status - Status to enable/disable power down.
+ * @return 0 in case of success, negative error code otherwise
+ */
+int32_t ad5592r_power_down(struct ad5592r_dev *dev, uint8_t chan, bool status)
+{
+	int ret;
+	uint16_t temp_reg_val;
+
+	if (!dev)
+		return -1;
+
+	ret = ad5592r_base_reg_read(dev, AD5592R_REG_PD, &temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	if (status)
+		temp_reg_val |= NO_OS_BIT(chan);
+	else
+		temp_reg_val &= ~NO_OS_BIT(chan);
+
+	ret = ad5592r_base_reg_write(dev, AD5592R_REG_PD, temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	dev->power_down[chan] = status;
+
+	return 0;
+}
+
+/**
+ * Set Reference Select option for the device
+ *
+ * @param dev - The device structure.
+ * @param status - Status to enable/disable internal reference.
+ * @return 0 in case of success, negative error code otherwise
+ */
+int32_t ad5592r_set_int_ref(struct ad5592r_dev *dev, bool status)
+{
+	uint16_t temp_reg_val;
+	int ret;
+
+	ret = ad5592r_base_reg_read(dev, AD5592R_REG_PD, &temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	if (status)
+		temp_reg_val |= AD5592R_REG_PD_EN_REF;
+	else
+		temp_reg_val &= ~AD5592R_REG_PD_EN_REF;
+
+	ret = ad5592r_base_reg_write(dev, AD5592R_REG_PD, temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	dev->int_ref = status;
+
+	return 0;
+}
+
+/**
+ * Set ADC Buffer for the device
+ *
+ * @param dev - The device structure.
+ * @param status - Status to enable/disable adc buffer.
+ * @return 0 in case of success, negative error code otherwise
+ */
+int32_t ad5592r_set_adc_buffer(struct ad5592r_dev *dev, bool status)
+{
+	uint16_t temp_reg_val;
+	int ret;
+
+	ret = ad5592r_base_reg_read(dev, AD5592R_REG_CTRL, &temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	if (status)
+		temp_reg_val |= AD5592R_REG_CTRL_ADC_BUFF_EN;
+	else
+		temp_reg_val &= ~AD5592R_REG_CTRL_ADC_BUFF_EN;
+
+	ret = ad5592r_base_reg_write(dev, AD5592R_REG_CTRL, temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	dev->adc_buf = status;
+
+	return 0;
 }
